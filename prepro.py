@@ -29,23 +29,28 @@ def read_docred(file_in, tokenizer, max_seq_length=1024):
         sent_map = []
 
         entities = sample['vertexSet']
-        entity_start, entity_end = [], []
-        for entity in entities:
+        entity_start, entity_end = {}, {}
+        for entity_id, entity in enumerate(entities):
             for mention in entity:
                 sent_id = mention["sent_id"]
-                pos = mention["pos"]
-                entity_start.append((sent_id, pos[0],))
-                entity_end.append((sent_id, pos[1] - 1,))
+                start, end = mention["pos"]
+                entity_start[(sent_id, start)] = entity_end[(sent_id, end - 1)] = entity_id
+        mention = False
         for i_s, sent in enumerate(sample['sents']):
             new_map = {}
             for i_t, token in enumerate(sent):
                 tokens_wordpiece = tokenizer.tokenize(token)
-                if (i_s, i_t) in entity_start:
-                    tokens_wordpiece = ["*"] + tokens_wordpiece
+                isstart = (i_s, i_t) in entity_start
+                if isstart:
+                    tokens_wordpiece = ["*"] + tokenizer.tokenize(f'__ENTITY_{entity_start[i_s, i_t]}')
                 if (i_s, i_t) in entity_end:
-                    tokens_wordpiece = tokens_wordpiece + ["*"]
+                    mention = False
+                    tokens_wordpiece = ["*"]
                 new_map[i_t] = len(sents)
-                sents.extend(tokens_wordpiece)
+                if not mention:
+                    sents.extend(tokens_wordpiece)
+                if isstart:
+                    mention = True
             new_map[i_t + 1] = len(sents)
             sent_map.append(new_map)
 
