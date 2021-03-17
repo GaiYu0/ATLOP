@@ -219,9 +219,14 @@ def main():
         model.load_state_dict(torch.load(args.load_path))
         dev_score, dev_output = evaluate(args, model, dev_features, tag="dev")
         print(dev_output)
-        pred = report(args, model, test_features)
-        with open("result.json", "w") as fh:
-            json.dump(pred, fh)
+
+        dev_pred = report(args, model, dev_features)
+        with open("dev-result.json", "w") as fh:
+            json.dump(dev_pred, fh)
+
+        test_pred = report(args, model, test_features)
+        with open("test-result.json", "w") as fh:
+            json.dump(test_pred, fh)
 
 
 if __name__ == "__main__":
